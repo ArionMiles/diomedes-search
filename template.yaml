@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+
+Globals:
+  Function:
+    Runtime: go1.x
+    Tags:
+      ProjectName: diomedes-search
+
+Resources:
+  Search:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: build/search
+      Environment:
+        Variables:
+          QUEUE_URL: !Ref MovieQueue
+          DDB_TABLE: !Ref MovieTable
+      Events:
+        CronEvent:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 minute)
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref MovieTable
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt MovieQueue.QueueName
+
+  Notification:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: build/notification-telegram
+      Environment:
+        Variables:
+          # TIP: Set this after deployment from the AWS Console
+          # Ideally this should be loaded via Secrets Manager
+          TG_TOKEN: "Your token here"
+          DDB_TABLE: !Ref MovieTable
+      Events:
+        MovieEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt MovieQueue.Arn
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MovieTable
+
+  MovieQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      Tags:
+        - Key: ProjectName
+          Value: diomedes-search
+
+  MovieTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: Id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: Id
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      Tags:
+        - Key: ProjectName
+          Value: diomedes-search
+
+Outputs:
+  SearchFunction:
+    Description: "Diomedes Search Function Name"
+    Value: !Ref Search
+  NotificationFunction:
+    Description: "Diomedes Telegram Notification Function Name"
+    Value: !Ref Notification
+  SQSQueue:
+    Description: "SQS Queue URL for Movie Events"
+    Value: !Ref MovieQueue
+  DDBTable:
+    Description: "DynamoDB Table for Movie reminders"
+    Value: !Ref MovieTable
