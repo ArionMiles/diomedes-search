@@ -29,7 +29,8 @@ go build -o ./build ./cmd/...
 
 1. Go to the Notification function on AWS Console and set the `TG_TOKEN` to your Telegram bot token.
 2. Add an alert in `MovieTable` like this (I use the AWS Console to keep it simple):
-   <image here>
+![image](https://user-images.githubusercontent.com/13501594/144083714-c4ca920f-de45-4819-ad5d-6ea434511661.png)
+
 
 # Contributing
 
@@ -38,4 +39,4 @@ Open a PR for enhancements and bugfixes.
 
 # License
 
-[MIT License](LICENSE.md)
+[MIT License](LICENSE)
